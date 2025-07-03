@@ -1,0 +1,152 @@
+#-----------------------------------  Provider
+provider "aws" {
+  region     = "us-east-1"
+  access_key = ""
+  secret_key = ""
+}
+
+
+#-----------------------------------    VPC
+resource "aws_vpc" "main" {
+  cidr_block       = "10.0.0.0/16"
+  instance_tenancy = "default"
+
+  tags = {
+    Name = "My-VPC"
+  }
+}
+
+#-------------------------------------  Subnet          ##
+resource "aws_subnet" "pub_net" {
+  vpc_id     = aws_vpc.main.id
+  cidr_block = "10.0.0.0/24"
+
+  tags = {
+    Name = "Public Subnet"
+  }
+}
+
+resource "aws_subnet" "pri_net" {
+  vpc_id     = aws_vpc.main.id
+  cidr_block = "10.0.1.0/24"
+
+  tags = {
+    Name = "Private Subnet"
+  }
+}
+
+#------------------------------------------     IGW             ##
+resource "aws_internet_gateway" "gw" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "vpc-igw"
+  }
+}
+
+#-------------------------------------------    NAT             ##
+
+resource "aws_eip" "nat-eip" {
+}
+
+
+resource "aws_nat_gateway" "nat" {
+  allocation_id = aws_eip.nat-eip.id
+  subnet_id     = aws_subnet.pub_net.id
+}
+
+#---------------------------------------------- Security Group          ##
+resource "aws_security_group" "allow_tls" {
+  name        = "allow_tls"
+  description = "Allow TLS inbound traffic and all outbound traffic"
+  vpc_id      = aws_vpc.main.id
+
+  tags = {
+    Name = "SG-Dev"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "tcp" {
+  security_group_id = aws_security_group.allow_tls.id
+  cidr_ipv4         = aws_vpc.main.cidr_block
+  from_port         = 443
+  ip_protocol       = "tcp"
+  to_port           = 443
+}
+
+resource "aws_vpc_security_group_ingress_rule" "ssh" {
+  security_group_id = aws_security_group.allow_tls.id
+  cidr_ipv4         = aws_vpc.main.cidr_block
+  from_port         = 22
+  ip_protocol       = "tcp"
+  to_port           = 22
+}
+
+resource "aws_vpc_security_group_ingress_rule" "http" {
+  security_group_id = aws_security_group.allow_tls.id
+  cidr_ipv4         = aws_vpc.main.cidr_block
+  from_port         = 80
+  ip_protocol       = "tcp"
+  to_port           = 80
+}
+
+resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_ipv4" {
+  security_group_id = aws_security_group.allow_tls.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1" # semantically equivalent to all ports
+}
+
+# ------------------------------------------------------------------------------- Route Tables ####
+resource "aws_route_table" "pub_route" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.gw.id
+  }
+}
+
+resource "aws_route_table" "pri_route" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_nat_gateway.nat.id
+  }
+}
+
+# ------------------------------------------------------------------------------- Subnet Associations
+
+resource "aws_route_table_association" "pub-asso" {
+  subnet_id      = aws_subnet.pub_net.id
+  route_table_id = aws_route_table.pub_route.id
+}
+
+resource "aws_route_table_association" "private-asso" {
+  subnet_id      = aws_subnet.pri_net.id
+  route_table_id = aws_route_table.pri_route.id
+}
+
+
+# ------------------------------------------------------------------------------ Instance CODE ----
+
+resource "aws_key_pair" "deployer" {
+  key_name   = "deployer-key"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCV0A5kuvj37LnCGRWS+d9sDjvyTrOnzCTM25hVB/Dx4l2l2h4NIDtS5sA+Eu1F1NFu941AmTtbgCVOm2/Ax2pSUC820NqxXHPdMq5KMj7ZNSTqxN19RaGNC1h2mj2i4OPwQJcKQijY0U+xkmSOX/poTsEgY09O2OqTFRBADqVKwa58M7Rg041m6CVHXowNeUXEbHDDNVxhQq7BCvN0t7lAvjofikfOHQlMlmsjumnFHFXqXnoR7SzYC8UYJ96W1g67tA7m4gloqoTBqrjHUuOFVp60gXoctIsgRbvuA0LuaNj36e8rLHdiQDNcFxLae2geiXh1syRbVsDALDoPQW9WEywTLAFl4iDrjBygqgUwp3D5M7lkeagEuXg1NVXl3+ufqEoJ51YeTsirYheHG2UfSEqc5k4K9ppnrRLW4MQ33Z0ZtHHXDxXgg0QFJscdqt5XIVG0iBIeSzeSusvYGFbKIsY4ArjgZLvLMUrLYc65sDbLebLtt8FiPfN+WHD2sj8= root@tf-server"
+}
+
+
+resource "aws_instance" "MyServer" {
+  ami                    = "ami-05ffe3c48a9991133"
+  instance_type          = "t2.micro"
+  security_groups        = [aws_security_group.allow_tls.name]
+  vpc_security_group_ids = [aws_security_group.allow_tls.id]
+  tags = {
+    Name = "Terr-Server.."
+  }
+  key_name          = "deployer-key"
+  availability_zone = "us-east-1a"
+
+}
+
+# -------------------------------------------------------------------------------- END of Instance -----
