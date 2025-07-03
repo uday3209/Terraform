@@ -1,0 +1,49 @@
+provider "aws" {
+  region = "us-east-1"
+  access_key = ""
+  secret_key = ""
+}
+
+
+resource "aws_instance" "MyServer" {
+  ami = "ami-05ffe3c48a9991133"
+  instance_type = "t2.micro"
+  security_groups = [aws_security_group.MySg.name]
+  vpc_security_group_ids = [aws_security_group.MySg.id]
+  tags = {
+    Name = "Terr-Server.."
+  }
+  key_name = "Milestone-key"
+  availability_zone = "us-east-1a"
+}
+
+resource "aws_security_group" "MySg" {
+  name = "MySG"
+  description = "Allow inbound rules"
+  tags = {
+    Name = "example"
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "allow-http" {
+  security_group_id = aws_security_group.MySg.id
+  cidr_ipv4 = "0.0.0.0/0"
+  from_port = 80
+  ip_protocol = "tcp"
+   to_port = 80
+}
+
+
+resource "aws_vpc_security_group_ingress_rule" "allow-ssh" {
+  security_group_id = aws_security_group.MySg.id
+  cidr_ipv4 = "0.0.0.0/0"
+  from_port = 22
+  ip_protocol = "tcp"
+  to_port = 22
+}
+
+resource "aws_vpc_security_group_egress_rule" "allow-all" {
+  security_group_id = aws_security_group.MySg.id
+  cidr_ipv4 = "0.0.0.0/0"
+  ip_protocol = -1
+}
