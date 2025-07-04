@@ -1,21 +1,23 @@
-provider "aws" {
+## Add Access_key and Security_key also ssh_key
 
-  region = "us-east-1"
- 
+provider "aws" {
+  region     = "us-east-1"
+  access_key = ""
+  secret_key = ""
 }
- 
+
 resource "aws_vpc" "test-vpc" {
 
   cidr_block = "10.0.0.0/16"
 
 }
- 
+
 resource "aws_subnet" "public-subnet" {
 
-  vpc_id     = aws_vpc.test-vpc.id
+  vpc_id = aws_vpc.test-vpc.id
 
   cidr_block = "10.0.0.0/24"
- 
+
   tags = {
 
     Name = "Public-subnet"
@@ -23,14 +25,14 @@ resource "aws_subnet" "public-subnet" {
   }
 
 }
- 
- 
+
+
 resource "aws_subnet" "private-subnet" {
 
-  vpc_id     = aws_vpc.test-vpc.id
+  vpc_id = aws_vpc.test-vpc.id
 
   cidr_block = "10.0.1.0/24"
- 
+
   tags = {
 
     Name = "Private-subnet"
@@ -41,55 +43,55 @@ resource "aws_subnet" "private-subnet" {
 
 resource "aws_security_group" "test_access" {
 
-  name        = "test_access"
+  name = "test_access"
 
-  vpc_id      = aws_vpc.test-vpc.id
+  vpc_id = aws_vpc.test-vpc.id
 
   description = "allow ssh and http"
- 
+
   ingress {
 
-    from_port   = 80
+    from_port = 80
 
-    to_port     = 80
+    to_port = 80
 
-    protocol    = "tcp"
+    protocol = "tcp"
 
     cidr_blocks = ["0.0.0.0/0"]
 
   }
- 
+
   ingress {
 
-    from_port   = 22
+    from_port = 22
 
-    to_port     = 22
+    to_port = 22
 
-    protocol    = "tcp"
+    protocol = "tcp"
 
     cidr_blocks = ["0.0.0.0/0"]
 
   }
- 
+
   egress {
 
-    from_port   = 0
+    from_port = 0
 
-    to_port     = 0
+    to_port = 0
 
-    protocol    = "-1"
+    protocol = "-1"
 
     cidr_blocks = ["0.0.0.0/0"]
 
   }
 
 }
- 
- 
+
+
 resource "aws_internet_gateway" "test-igw" {
 
   vpc_id = aws_vpc.test-vpc.id
- 
+
   tags = {
 
     Name = "test-igw"
@@ -97,12 +99,12 @@ resource "aws_internet_gateway" "test-igw" {
   }
 
 }
- 
- 
+
+
 resource "aws_route_table" "public-rt" {
 
   vpc_id = aws_vpc.test-vpc.id
- 
+
   route {
 
     cidr_block = "0.0.0.0/0"
@@ -110,8 +112,8 @@ resource "aws_route_table" "public-rt" {
     gateway_id = aws_internet_gateway.test-igw.id
 
   }
- 
- 
+
+
   tags = {
 
     Name = "public-rt"
@@ -122,76 +124,76 @@ resource "aws_route_table" "public-rt" {
 
 resource "aws_route_table_association" "public-asso" {
 
-  subnet_id      = aws_subnet.public-subnet.id
+  subnet_id = aws_subnet.public-subnet.id
 
   route_table_id = aws_route_table.public-rt.id
- 
+
 }
- 
+
 resource "aws_instance" "sanjay-server" {
 
-  ami             = "ami-05ffe3c48a9991133"
+  ami = "ami-05ffe3c48a9991133"
 
-  subnet_id       = aws_subnet.public-subnet.id
+  subnet_id = aws_subnet.public-subnet.id
 
-  instance_type   = "t2.micro"
+  instance_type = "t2.micro"
 
   security_groups = ["${aws_security_group.test_access.id}"]
 
-  key_name        = "lti"
+  key_name = "lti"
 
   tags = {
 
-    Name     = "test-World"
+    Name = "test-World"
 
-    Stage    = "testing"
+    Stage = "testing"
 
     Location = "chennai"
 
   }
- 
+
 }
- 
- 
+
+
 resource "aws_eip" "sanjay-ec2-eip" {
 
   instance = aws_instance.sanjay-server.id
 
 }
- 
- 
+
+
 resource "aws_key_pair" "lti" {
 
-  key_name   = "lti"
+  key_name = "lti"
 
-  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC6IKk/bH36QXNScNhyUK1aaIPBfzJbXhH4Di0anm2MH/5lSbD+qJEs3SXuaNTeXx+Fjic36hkbWdp4nyJOXwGL/0bqHBhRZdyKvfc6SO0bIzA7dALXN4bpXITF3WpdJL6SUS4JScDIBctVMBjYNts44elVpT4A7WVh9zGpV9nIa9nLX1LSxubLc2BWLJG2ejcsMIGxW24/6wi+LiF21pLyQ8HFWhQLUZ11QUNYAy/PywiA0UkUhqLRbiJ8tFU/EP86M8trSRW2q8LVZ6SrusETbZNbrYHtehKSm6b9UNCeEoabRT5EQXYQ3UtZRHd9dvXX0GwbijCSPd9T01B0Xd83ALo8TBrUEFL+w32s1043DWPa5hnn5DN23K46/eqhr5mPr1JOgOP78S76XtctEVc7Kd2BLBS5UWfTDnovpPIfj60yFcXa9B3D+l/IKHcFazFuNVd111SDvJyy6CypWlQRZ6E8FvgvYbVQBBY0SsmCnXp/3pVEXb2ZyZmbZwVt7h8= root@ansible.example.com"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC9HnwA/XEShmfFYHiRErQhaiDoUqcejcfFNRv/8xRJd9tFs4K7MtSZyMyfPJiL/BowY2m0aANw1V6wMUME2vM75G9SxmE1v38OQFSl3GU7cyZSiBIB4hIaMokOSWSezsNjPKlKIMK0MY34eVsq0PlZU+0ygAV6kXe4XoD2EDOcabH+VtvFD7uQmlEo0xXcaji94nXY6q7yLNAvpup0DyPocPxwSKLHhkTM0v6Gl6wcSUxFzHaKF2EzGDFDC61JvYTyt05EtRMrTikU3CXpcHR/POhc1LWNecnjSgY4NXFz7/RHVEJ9g264tMaGiab9uJWbzZzEDbEvGHpOruDCxqooY2WjfMfU2O4s2095DyLvuzzRsGuzmgXEbmpKWe43lE58wuH3hpdCzBojFx8wikWPnRoskm7kBSJnoD2KxjnqK5YnKdYRXKcQqPIn/HBbfgtf+UnS1YZGlaKhvW0ZOQjGxGFm6aRD+YE04RbGtHiZnGZZZZJ2i/Hw2HDince/UYc= root@Ansi-Master"
 
 }
 
 resource "aws_instance" "database-server" {
 
-  ami             = "ami-05ffe3c48a9991133"
+  ami = "ami-05ffe3c48a9991133"
 
-  subnet_id       = aws_subnet.private-subnet.id
+  subnet_id = aws_subnet.private-subnet.id
 
-  instance_type   = "t2.micro"
+  instance_type = "t2.micro"
 
   security_groups = ["${aws_security_group.test_access.id}"]
 
-  key_name        = "lti"
+  key_name = "lti"
 
   tags = {
 
-    Name     = "db-World"
+    Name = "db-World"
 
-    Stage    = "stage-base"
+    Stage = "stage-base"
 
     Location = "delhi"
 
   }
- 
+
 }
- 
+
 resource "aws_eip" "nat-eip" {
 
   tags = {
@@ -201,19 +203,19 @@ resource "aws_eip" "nat-eip" {
   }
 
 }
- 
+
 resource "aws_nat_gateway" "my-ngw" {
 
   allocation_id = aws_eip.nat-eip.id
 
-  subnet_id     = aws_subnet.public-subnet.id
+  subnet_id = aws_subnet.public-subnet.id
 
 }
- 
+
 resource "aws_route_table" "private-rt" {
 
   vpc_id = aws_vpc.test-vpc.id
- 
+
   route {
 
     cidr_block = "0.0.0.0/0"
@@ -229,12 +231,11 @@ resource "aws_route_table" "private-rt" {
   }
 
 }
- 
+
 resource "aws_route_table_association" "private-asso" {
 
-  subnet_id      = aws_subnet.private-subnet.id
+  subnet_id = aws_subnet.private-subnet.id
 
   route_table_id = aws_route_table.private-rt.id
 
 }
- 
