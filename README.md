@@ -1,7 +1,6 @@
 # Terraform Installation
 #### Ubuntu os
   ```
-
   apt-get update && sudo apt-get install -y gnupg software-properties-common
   wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
   gpg --no-default-keyring --keyring /usr/share/keyrings/hashicorp-archive-keyring.gpg --fingerprint
@@ -9,14 +8,20 @@
   sudo apt update
   sudo apt-get install terraform
   terraform --version
-  
   ```
 #### Linux
   ```
-
     yum install yum-utils -y
     yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
     sudo yum install terraform -y
     terraform --version
+  ```
 
+ #### Aws CLI
+  ```
+     curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+     unzip awscliv2.zip
+     sudo ./aws/install
+     aws --version
+     aws configure
   ```
